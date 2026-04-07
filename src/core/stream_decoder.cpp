@@ -1,0 +1,327 @@
+#include "stream_decoder.h"
+#include "app_config.h"
+
+#include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QTextStream>
+#include <QRegularExpression>
+
+#include <chrono>
+#include <array>
+
+// ---------------------------------------------------------------------------
+// Construction / destruction
+// ---------------------------------------------------------------------------
+
+StreamDecoder::StreamDecoder(int port, const QString &sdpTemplatePath,
+                             QObject *parent)
+    : QThread(parent)
+    , m_port(port)
+    , m_sdpTemplatePath(sdpTemplatePath)
+{
+    m_tempSdp.setFileTemplate(QDir::tempPath() + "/hm30_rtp_XXXXXX.sdp");
+}
+
+StreamDecoder::~StreamDecoder()
+{
+    stop();
+}
+
+// ---------------------------------------------------------------------------
+// Public control
+// ---------------------------------------------------------------------------
+
+void StreamDecoder::stop()
+{
+    m_running.store(false, std::memory_order_release);
+    wait(); // Block until QThread::run() returns.
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+QString StreamDecoder::buildSdpContent() const
+{
+    QFile sdpFile(m_sdpTemplatePath);
+    if (!sdpFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "[StreamDecoder] Cannot open SDP template:" << m_sdpTemplatePath;
+        return {};
+    }
+
+    QString content = QTextStream(&sdpFile).readAll();
+    sdpFile.close();
+
+    // Patch the port number in the m=video line.
+    content.replace(QRegularExpression(R"(m=video\s+\d+)"),
+                    QStringLiteral("m=video %1").arg(m_port));
+    return content;
+}
+
+bool StreamDecoder::openStream()
+{
+    // -- Build and write the patched SDP to a temporary file ------------------
+    const QString sdpContent = buildSdpContent();
+    if (sdpContent.isEmpty()) {
+        return false;
+    }
+
+    if (!m_tempSdp.open()) {
+        qWarning() << "[StreamDecoder] Cannot create temporary SDP file.";
+        return false;
+    }
+    {
+        QTextStream out(&m_tempSdp);
+        out << sdpContent;
+        m_tempSdp.flush();
+    }
+
+    qInfo().nospace() << "[StreamDecoder] Opening RTP stream — port " << m_port
+                      << " via " << m_tempSdp.fileName();
+
+    // -- Allocate format context ----------------------------------------------
+    m_fmtCtx = avformat_alloc_context();
+    if (!m_fmtCtx) {
+        qCritical() << "[StreamDecoder] avformat_alloc_context() failed.";
+        return false;
+    }
+
+    // -- Low-latency AVDictionary options -------------------------------------
+    AVDictionary *opts = nullptr;
+    av_dict_set(&opts, "protocol_whitelist", "file,udp,rtp", 0);
+    av_dict_set(&opts, "fflags",             "nobuffer",      0);
+    av_dict_set(&opts, "flags",              "low_delay",     0);
+    av_dict_set(&opts, "framedrop",          "1",             0);
+    av_dict_set(&opts, "max_delay",          "0",             0);
+    av_dict_set(&opts, "reorder_queue_size", "0",             0);
+
+    // -- Find SDP demuxer -----------------------------------------------------
+    const AVInputFormat *sdpFmt = av_find_input_format("sdp");
+    if (!sdpFmt) {
+        qWarning() << "[StreamDecoder] SDP input format unavailable in this FFmpeg build.";
+        avformat_free_context(m_fmtCtx);
+        m_fmtCtx = nullptr;
+        av_dict_free(&opts);
+        return false;
+    }
+
+    // -- Open the stream ------------------------------------------------------
+    // ff_const59 evaluates to 'const' on FFmpeg ≥ 5.x but is empty on 4.x,
+    // so we const_cast to satisfy the older ABI without breaking newer builds.
+    int ret = avformat_open_input(&m_fmtCtx,
+                                  m_tempSdp.fileName().toUtf8().constData(),
+                                  const_cast<AVInputFormat *>(sdpFmt), &opts);
+    av_dict_free(&opts);
+
+    if (ret < 0) {
+        std::array<char, 256> errBuf{};
+        av_strerror(ret, errBuf.data(), errBuf.size());
+        qWarning() << "[StreamDecoder] avformat_open_input failed:" << errBuf.data();
+        avformat_free_context(m_fmtCtx);
+        m_fmtCtx = nullptr;
+        m_tempSdp.close();
+        return false;
+    }
+
+    m_fmtCtx->max_analyze_duration = AppConfig::kMaxAnalyzeDuration;
+    m_fmtCtx->probesize            = AppConfig::kProbeSize;
+
+    avformat_find_stream_info(m_fmtCtx, nullptr);
+
+    // -- Locate the first video stream ----------------------------------------
+    m_videoStreamIdx = -1;
+    for (unsigned i = 0; i < m_fmtCtx->nb_streams; ++i) {
+        if (m_fmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            m_videoStreamIdx = static_cast<int>(i);
+            break;
+        }
+    }
+    if (m_videoStreamIdx < 0) {
+        qWarning() << "[StreamDecoder] No video stream found in SDP.";
+        closeStream();
+        return false;
+    }
+
+    // -- Open codec -----------------------------------------------------------
+    const AVCodecParameters *codecPar = m_fmtCtx->streams[m_videoStreamIdx]->codecpar;
+    const AVCodec *codec = avcodec_find_decoder(codecPar->codec_id);
+    if (!codec) {
+        qWarning() << "[StreamDecoder] Unsupported codec id:" << codecPar->codec_id;
+        closeStream();
+        return false;
+    }
+
+    m_codecCtx = avcodec_alloc_context3(codec);
+    if (!m_codecCtx) {
+        qCritical() << "[StreamDecoder] avcodec_alloc_context3() failed.";
+        closeStream();
+        return false;
+    }
+
+    avcodec_parameters_to_context(m_codecCtx, codecPar);
+    m_codecCtx->flags        |= AV_CODEC_FLAG_LOW_DELAY;
+    m_codecCtx->flags2       |= AV_CODEC_FLAG2_FAST;
+    m_codecCtx->thread_count  = AppConfig::kDecoderThreads;
+
+    if (avcodec_open2(m_codecCtx, codec, nullptr) < 0) {
+        qWarning() << "[StreamDecoder] avcodec_open2() failed.";
+        closeStream();
+        return false;
+    }
+
+    // Report initial resolution if available from SDP parameters.
+    if (m_codecCtx->width > 0 && m_codecCtx->height > 0) {
+        m_width.store(m_codecCtx->width,   std::memory_order_relaxed);
+        m_height.store(m_codecCtx->height, std::memory_order_relaxed);
+        qInfo() << "[StreamDecoder] Stream connected:"
+                << m_codecCtx->width << "x" << m_codecCtx->height
+                << "codec:" << codec->name;
+    } else {
+        qInfo() << "[StreamDecoder] Stream opened — resolution pending first frame.";
+    }
+
+    m_connected.store(true, std::memory_order_release);
+    emit connectionChanged(true);
+    return true;
+}
+
+void StreamDecoder::closeStream()
+{
+    m_connected.store(false, std::memory_order_release);
+
+    if (m_swsCtx) {
+        sws_freeContext(m_swsCtx);
+        m_swsCtx = nullptr;
+    }
+    if (m_codecCtx) {
+        avcodec_free_context(&m_codecCtx);
+    }
+    if (m_fmtCtx) {
+        avformat_close_input(&m_fmtCtx);
+    }
+
+    m_videoStreamIdx = -1;
+    m_tempSdp.close();
+}
+
+// ---------------------------------------------------------------------------
+// Main decode loop (runs on the worker thread)
+// ---------------------------------------------------------------------------
+
+void StreamDecoder::run()
+{
+    m_running.store(true, std::memory_order_release);
+    qInfo() << "[StreamDecoder] Decode thread started — UDP port" << m_port;
+
+    while (m_running.load(std::memory_order_acquire)) {
+
+        // Attempt to (re)connect if currently disconnected.
+        if (!m_connected.load(std::memory_order_acquire)) {
+            if (!openStream()) {
+                QThread::msleep(AppConfig::kReconnectDelayMs);
+                continue;
+            }
+        }
+
+        AVPacket *pkt   = av_packet_alloc();
+        AVFrame  *frame = av_frame_alloc();
+
+        int  frameCount = 0;
+        auto fpsStart   = std::chrono::steady_clock::now();
+
+        // Inner loop: read and decode frames until the stream drops or stop() is called.
+        while (m_running.load(std::memory_order_acquire) &&
+               m_connected.load(std::memory_order_acquire))
+        {
+            int ret = av_read_frame(m_fmtCtx, pkt);
+            if (ret < 0) {
+                if (ret == AVERROR(EAGAIN)) {
+                    QThread::msleep(1);
+                    continue;
+                }
+                std::array<char, 256> errBuf{};
+                av_strerror(ret, errBuf.data(), errBuf.size());
+                qWarning() << "[StreamDecoder] av_read_frame failed:"
+                           << errBuf.data() << "— reconnecting...";
+                m_connected.store(false, std::memory_order_release);
+                emit connectionChanged(false);
+                break;
+            }
+
+            // Drop non-video packets.
+            if (pkt->stream_index != m_videoStreamIdx) {
+                av_packet_unref(pkt);
+                continue;
+            }
+
+            // Send encoded packet to codec.
+            ret = avcodec_send_packet(m_codecCtx, pkt);
+            av_packet_unref(pkt);
+            if (ret < 0) {
+                continue;
+            }
+
+            // Drain decoded frames.
+            while (avcodec_receive_frame(m_codecCtx, frame) == 0) {
+                const int w = frame->width;
+                const int h = frame->height;
+
+                // (Re)create the scaler if the resolution has changed.
+                if (w != m_width.load(std::memory_order_relaxed) ||
+                    h != m_height.load(std::memory_order_relaxed))
+                {
+                    m_width.store(w,  std::memory_order_relaxed);
+                    m_height.store(h, std::memory_order_relaxed);
+
+                    if (m_swsCtx) {
+                        sws_freeContext(m_swsCtx);
+                    }
+                    m_swsCtx = sws_getContext(
+                        w, h, static_cast<AVPixelFormat>(frame->format),
+                        w, h, AV_PIX_FMT_RGB24,
+                        AppConfig::kSwsAlgorithm, nullptr, nullptr, nullptr);
+
+                    qInfo() << "[StreamDecoder] Resolution changed to"
+                            << w << "x" << h;
+                }
+
+                // Convert YUV frame to RGB QImage in the back-buffer,
+                // then make a deep copy for the signal emission.
+                QImage finalImage;
+                {
+                    std::lock_guard<std::mutex> lock(m_bufMutex);
+                    if (m_backBuf.width() != w || m_backBuf.height() != h) {
+                        m_backBuf = QImage(w, h, QImage::Format_RGB888);
+                    }
+                    uint8_t *dst[4]   = { m_backBuf.bits(), nullptr, nullptr, nullptr };
+                    int dstStride[4]  = { static_cast<int>(m_backBuf.bytesPerLine()), 0, 0, 0 };
+                    sws_scale(m_swsCtx,
+                              frame->data, frame->linesize, 0, h,
+                              dst, dstStride);
+                    finalImage = m_backBuf.copy();
+                }
+
+                emit frameReady(std::move(finalImage));
+
+                // Update FPS counter once per second.
+                ++frameCount;
+                const auto now     = std::chrono::steady_clock::now();
+                const double elapsed = std::chrono::duration<double>(now - fpsStart).count();
+                if (elapsed >= 1.0) {
+                    m_fps.store(frameCount / elapsed, std::memory_order_relaxed);
+                    frameCount = 0;
+                    fpsStart   = now;
+                }
+
+                av_frame_unref(frame);
+            } // avcodec_receive_frame loop
+        } // inner read loop
+
+        av_packet_free(&pkt);
+        av_frame_free(&frame);
+        closeStream();
+    } // outer reconnect loop
+
+    qInfo() << "[StreamDecoder] Decode thread finished cleanly.";
+}

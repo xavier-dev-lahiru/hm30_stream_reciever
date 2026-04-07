@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <!--
+            Embeds style.qss into the binary so no external file is needed at runtime.
+            Accessed at runtime via:  QFile(":/style.qss")
+        -->
+        <file alias="style.qss">style.qss</file>
+    </qresource>
+</RCC>

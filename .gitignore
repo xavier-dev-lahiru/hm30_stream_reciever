@@ -1,0 +1,35 @@
+# Build artifacts
+build/
+build_debug/
+
+# Generated version header
+generated/
+
+# Qt Creator / CLion project files
+*.pro.user
+*.qbs.user
+CMakeLists.txt.user
+.qtcreator/
+
+# CLion / JetBrains
+.idea/
+cmake-build-*/
+
+# VS Code
+.vscode/
+
+# Compiled object files
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.exe
+
+# Temporary SDP files created at runtime
+/tmp/hm30_rtp_*.sdp
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*~
