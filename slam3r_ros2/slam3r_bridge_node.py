@@ -427,7 +427,8 @@ class SLAM3RWorker:
             frame_indices = list(range(len(input_views)))
             frame_indices = frame_indices[-WINDOW_SIZE:]
 
-            FRAME_CONF_MIN = 35.0
+            # Lower threshold to allow map updates during fast camera movement
+            FRAME_CONF_MIN = 10.0
 
             for i in frame_indices:
                 view = input_views[i]
@@ -543,7 +544,7 @@ class SLAM3RBridgeNode(Node):
         self.declare_parameter('num_scene_frame',     10)
         self.declare_parameter('buffer_size',         100)
         self.declare_parameter('retrieve_freq',       1)
-        self.declare_parameter('min_publish_conf',    35.0)  # skip publish trigger if frame conf < this
+        self.declare_parameter('min_publish_conf',    10.0)  # skip publish trigger if frame conf < this
 
         in_topic    = self.get_parameter('input_topic').value
         out_topic   = self.get_parameter('output_topic').value
