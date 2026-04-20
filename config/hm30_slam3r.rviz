@@ -7,7 +7,7 @@ Panels:
         - /Global Options1
         - /PointCloud21
       Splitter Ratio: 0.5
-    Tree Height: 741
+    Tree Height: 1065
   - Class: rviz_common/Views
     Expanded:
       - /Current View1
@@ -19,8 +19,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
+        Max Value: 0.7594537734985352
+        Min Value: -0.30938249826431274
         Value: true
       Axis: Z
       Channel Name: rgb
@@ -31,13 +31,13 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 4096
+      Max Intensity: 2.3509885615147286e-38
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 2
       Size (m): 0.009999999776482582
       Style: Points
       Topic:
@@ -110,25 +110,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 3.428879499435425
+      Distance: 3.053070068359375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.8999999761581421
-        Y: 0
-        Z: 0
+        X: 0.5788794159889221
+        Y: -0.6816790103912354
+        Z: 0.25070396065711975
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Pitch: 0.24479728937149048
+      Pitch: 0.14979718625545502
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.399984359741211
+      Yaw: 3.5849857330322266
     Saved: ~
 Window Geometry:
   Displays:
@@ -138,7 +138,7 @@ Window Geometry:
   Hide Right Dock: true
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd000000010000000000000316000007c4fc0200000003fb000000100044006900730070006c006100790073010000006e000003dd0000018200fffffffb0000000a005600690065007700730100000457000001430000013200fffffffb0000000a0049006d00610067006501000005a60000028c0000004a00ffffff00000bde000007c400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000010000000000000316000007c4fc0200000003fb000000100044006900730070006c006100790073010000006e000005210000018200fffffffb0000000a00560069006500770073010000059b000002970000013200fffffffb0000000a0049006d00610067006503000003ec00000166000008c3000006f700000bde000007c400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
   Width: 3840

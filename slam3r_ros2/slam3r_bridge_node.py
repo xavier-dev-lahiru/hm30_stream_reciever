@@ -36,6 +36,8 @@ import time
 import struct
 
 import numpy as np
+import torch
+torch.set_num_threads(4)  # Prevent CPU starvation
 import cv2
 
 # ── ROS2 ──────────────────────────────────────────────────────────────────────

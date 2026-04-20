@@ -95,6 +95,10 @@ bool StreamDecoder::openStream()
     av_dict_set(&opts, "framedrop",          "1",             0);
     av_dict_set(&opts, "max_delay",          "0",             0);
     av_dict_set(&opts, "reorder_queue_size", "0",             0);
+    
+    // Request a 10MB UDP socket buffer from the OS to prevent packet drops during CPU spikes
+    av_dict_set(&opts, "buffer_size",        "10485760",      0);
+    av_dict_set(&opts, "fifo_size",          "10485760",      0);
 
     // -- Find SDP demuxer -----------------------------------------------------
     const AVInputFormat *sdpFmt = av_find_input_format("sdp");

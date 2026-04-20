@@ -5,6 +5,11 @@
 
 #include <memory>
 #include <string>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <atomic>
 
 #include "headless_decoder.h"
 
@@ -44,4 +49,12 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr     m_pub;
     std::string                                               m_frame_id{"hm30_camera"};
     uint32_t                                                  m_seq{0};
+
+    // -- Thread Decoupling ----------------------------------------------------
+    void runPublishLoop();
+    std::queue<std::unique_ptr<sensor_msgs::msg::Image>> m_msgQueue;
+    std::mutex                                           m_queueMutex;
+    std::condition_variable                              m_queueCv;
+    std::thread                                          m_pubThread;
+    std::atomic<bool>                                    m_running{true};
 };
