@@ -14,12 +14,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Source ROS 2
-if [ -f /opt/ros/humble/setup.bash ]; then
+if [ -f /home/lahiru_s/ros2_jazzy/install/setup.bash ]; then
     set +u
-    source /opt/ros/humble/setup.bash
+    source /home/lahiru_s/ros2_jazzy/install/setup.bash
     set -u
 else
-    echo "[ERROR] ROS2 Humble not found at /opt/ros/humble"
+    echo "[ERROR] ROS2 Jazzy not found at /home/lahiru_s/ros2_jazzy/install/setup.bash"
     exit 1
 fi
 
@@ -31,7 +31,7 @@ echo " the heavy 2D video payload. Network is clear!"
 echo "==========================================================="
 
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-export CYCLONEDDS_URI=file:///home/xavier_ai/cyclonedds/cyclonedx.xml
+export CYCLONEDDS_URI=file:///home/lahiru_s/cyclonedds/cyclonedx.xml
 
 cd "$PROJECT_DIR"
 exec ./build/hm30_ros2_publisher "$@"

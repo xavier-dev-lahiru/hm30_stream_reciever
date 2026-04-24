@@ -3,10 +3,10 @@
 set -e
 
 CONDA_BASE=$(conda info --base)
-SLAM3R_DIR=/home/xavier_ai/Documents/SLAM3R
+SLAM3R_DIR=/home/lahiru_s/Documents/SLAM3R
 PYTHON_BIN=/usr/bin/python3
 
-source /opt/ros/humble/setup.bash
+source /home/lahiru_s/ros2_jazzy/install/setup.bash
 # Only SLAM3R in PYTHONPATH — torch/numpy installed directly in system Python 3.10 user site
 export PYTHONPATH="$SLAM3R_DIR:${PYTHONPATH:-}"
 

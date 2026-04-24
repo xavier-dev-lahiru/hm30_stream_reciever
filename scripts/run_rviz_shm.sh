@@ -14,9 +14,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Source ROS 2
-if [ -f /opt/ros/humble/setup.bash ]; then
+if [ -f /home/lahiru_s/ros2_jazzy/install/setup.bash ]; then
     set +u
-    source /opt/ros/humble/setup.bash
+    source /home/lahiru_s/ros2_jazzy/install/setup.bash
     set -u
 fi
 
@@ -28,6 +28,6 @@ echo " via zero-copy Shared Memory. Network is clear!"
 echo "==========================================================="
 
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-export CYCLONEDDS_URI=file:///home/xavier_ai/cyclonedds/cyclonedx.xml
+export CYCLONEDDS_URI=file:///home/lahiru_s/cyclonedds/cyclonedx.xml
 
 exec rviz2 -d "$PROJECT_DIR/config/hm30_slam3r.rviz"

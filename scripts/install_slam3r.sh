@@ -142,7 +142,7 @@ EOF
 
 # ── Step 8: Install ROS2 Python packages into the conda env ───────────────────
 step "Linking ROS2 Python packages into conda env"
-ROS_PYTHON_PATH="/opt/ros/humble/lib/python3.10/dist-packages"
+ROS_PYTHON_PATH="/home/lahiru_s/ros2_jazzy/install/lib/python3.12/site-packages"
 CONDA_SITE=$(python3 -c "import site; print(site.getsitepackages()[0])")
 ROS_PTH="$CONDA_SITE/ros2_humble.pth"
 
@@ -175,14 +175,14 @@ echo ""
 echo " To run the full pipeline:"
 echo ""
 echo "   Terminal 1 — stream publisher:"
-echo "     source /opt/ros/humble/setup.bash"
+echo "     source /home/lahiru_s/ros2_jazzy/install/setup.bash"
 echo "     ./build/hm30_ros2_publisher"
 echo ""
 echo "   Terminal 2 — 3D reconstruction:"
 echo "     bash scripts/run_slam3r_bridge.sh"
 echo ""
 echo "   Terminal 3 — verify:"
-echo "     source /opt/ros/humble/setup.bash"
+echo "     source /home/lahiru_s/ros2_jazzy/install/setup.bash"
 echo "     ros2 topic hz /hm30/pointcloud"
 echo "     rviz2   # add PointCloud2 display on /hm30/pointcloud"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

@@ -27,12 +27,12 @@ else
 fi
 
 # ── Source ROS2 (provides rclpy, sensor_msgs for system Python 3.10) ─────────
-if [ -f /opt/ros/humble/setup.bash ]; then
+if [ -f /home/lahiru_s/ros2_jazzy/install/setup.bash ]; then
     set +u  # ROS2 setup.bash uses unbound vars internally
-    source /opt/ros/humble/setup.bash
+    source /home/lahiru_s/ros2_jazzy/install/setup.bash
     set -u
 else
-    echo "[ERROR] ROS2 Humble not found at /opt/ros/humble"; exit 1
+    echo "[ERROR] ROS2 Jazzy not found at /home/lahiru_s/ros2_jazzy/install/setup.bash"; exit 1
 fi
 
 # ── Build PYTHONPATH: add SLAM3R source tree to system Python 3.10 ───────────

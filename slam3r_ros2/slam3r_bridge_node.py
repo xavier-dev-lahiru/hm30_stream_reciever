@@ -14,7 +14,7 @@ Architecture:
 
 Usage:
   # Activate the slam3r conda environment first, then:
-  source /opt/ros/humble/setup.bash
+  source /home/lahiru_s/ros2_jazzy/install/setup.bash
   python3 slam3r_bridge_node.py
 
   # Override defaults via ROS2 parameters:
