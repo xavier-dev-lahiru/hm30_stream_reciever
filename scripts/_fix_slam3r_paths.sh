@@ -8,7 +8,7 @@ set -e
 
 CONDA_BASE=$(conda info --base)
 CONDA_SITE="$CONDA_BASE/envs/slam3r/lib/python3.11/site-packages"
-SLAM3R_DIR=/home/lahiru_s/Documents/SLAM3R
+SLAM3R_DIR=/home/lahiru_s/Desktop/projects/SLAM3R
 
 # System Python 3.10 site-packages
 SYS_SITE=$(python3 -c "import site; print(site.getsitepackages()[0])")

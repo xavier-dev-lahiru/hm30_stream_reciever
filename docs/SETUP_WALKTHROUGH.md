@@ -139,29 +139,77 @@ export CYCLONEDDS_URI=file:///home/lahiru_s/cyclonedds/cyclonedx.xml
 
 **Why all three:** Publisher sets these in `run_receiver_internal.sh`. Any CLI tool (topic list, hz, echo) must use the same RMW + same CycloneDDS config to join the same DDS domain. Mismatched RMW = silent discovery failure (sharp edge: no error, just no connection).
 
-### Pending Issue
-`ros2 topic hz /hm30/image_raw` hangs — subscription count shows 0 despite topic being listed. Under investigation.
+### Verified Working
+```
+Subscription count: 1
+height: 720 / width: 1280 / encoding: rgb8
+data: '<sequence type: uint8, length: 2764800>'  # = 1280×720×3 ✓
+```
 
-**Possible causes:**
-- Loopback multicast not delivering DDS discovery between processes
-- Publisher not calling `publish()` (FPS shown is decode FPS, not publish FPS)
-- CycloneDDS `<NetworkInterface name="lo">` restriction blocking peer discovery on same host
+**Note on `ros2 topic hz` false negative:** Running `topic info` after killing `hz` showed sub count 0. Must run `topic info` and `hz` simultaneously to see active subscription. `topic echo --no-arr` is the cleaner test.
+
+---
+
+## 6. Laptop Webcam Stream Source
+
+### Problem
+IP Webcam requires phone on same network. Laptop webcam (`/dev/video0`) is always available — cleaner for local testing.
+
+### Discovery
+```bash
+v4l2-ctl --device=/dev/video0 --all
+# Card type: HD Webcam: HD Webcam
+# Width/Height: 1280/720
+# Pixel Format: MJPG (Motion-JPEG)
+```
+
+Webcam outputs MJPEG natively at 1280×720.
+
+### Created `scripts/stream_from_webcam.sh`
+
+```bash
+ffmpeg \
+    -f v4l2 \
+    -input_format mjpeg \
+    -video_size 1280x720 \
+    -framerate 30 \
+    -i /dev/video0 \
+    -c:v libx264 -preset ultrafast -tune zerolatency \
+    -pix_fmt yuv420p -an \
+    -f rtp "rtp://127.0.0.1:5600"
+```
+
+**Why `-input_format mjpeg`:** V4L2 can deliver raw YUYV or MJPEG. MJPEG read avoids kernel-side YUYV→RGB conversion, saving one decode step. FFmpeg reads compressed MJPEG frames from V4L2 then re-encodes to H.264.
+
+**Override device/port:**
+```bash
+bash scripts/stream_from_webcam.sh /dev/video1 5700
+```
 
 ---
 
 ## Quick-Start Commands (This Machine)
 
+### Stream sources (pick one)
 ```bash
-# Terminal 1 — IP cam relay
+# Option A — Android IP Webcam (192.168.8.176:8080)
 bash scripts/stream_from_ipcam.sh
 
-# Terminal 2 — GUI viewer (no ROS2)
+# Option B — Laptop webcam (/dev/video0)
+bash scripts/stream_from_webcam.sh
+```
+
+### Receivers (pick one, not both — both bind UDP :5600)
+```bash
+# GUI viewer
 ./build/hm30_rtp_receiver
 
-# Terminal 2 (alt) — ROS2 publisher
+# ROS2 publisher
 bash scripts/run_receiver_internal.sh
+```
 
-# Terminal 3 — verify ROS2 topic
+### Verify ROS2 topic
+```bash
 source /home/lahiru_s/ros2_jazzy/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export CYCLONEDDS_URI=file:///home/lahiru_s/cyclonedds/cyclonedx.xml

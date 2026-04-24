@@ -28,6 +28,8 @@ echo " Make sure hm30_rtp_receiver is already running on port ${RTP_PORT}"
 echo "================================================================"
 
 exec ffmpeg \
+    -hide_banner \
+    -loglevel warning \
     -fflags nobuffer \
     -flags low_delay \
     -i "${CAM_URL}" \

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Quick diagnostic: print XYZ statistics of the next PointCloud2 message."""
 import sys, os
-sys.path.insert(0, '/home/lahiru_s/Documents/SLAM3R')
+sys.path.insert(0, '/home/lahiru_s/Desktop/projects/SLAM3R')
 
 import rclpy
 from rclpy.node import Node

@@ -13,7 +13,7 @@ Architecture:
   Frame queue  ──►  SLAM3R worker thread  ──►  /hm30/pointcloud (PointCloud2)
 
 Usage:
-  # Activate the slam3r conda environment first, then:
+  # Activate the slam3r_bridge conda environment first, then:
   source /home/lahiru_s/ros2_jazzy/install/setup.bash
   python3 slam3r_bridge_node.py
 
@@ -162,6 +162,7 @@ def make_pointcloud2(points_xyz: np.ndarray,
 def _make_args(device, conf_thres_i2p, conf_thres_l2w,
                keyframe_stride, initial_winsize, win_r,
                num_scene_frame, buffer_size, retrieve_freq,
+               max_num_register=4, num_points_save=500_000,
                min_publish_conf=20.0):
     args = argparse.Namespace()
     args.device           = device
@@ -171,8 +172,8 @@ def _make_args(device, conf_thres_i2p, conf_thres_l2w,
     args.initial_winsize  = initial_winsize
     args.win_r            = win_r
     args.num_scene_frame  = num_scene_frame
-    args.max_num_register = 10
-    args.num_points_save  = 2_000_000
+    args.max_num_register = max_num_register  # 4 for 8 GB GPU
+    args.num_points_save  = num_points_save   # 500k for 8 GB GPU
     args.norm_input       = False
     args.save_frequency   = 3
     args.save_each_frame  = False
@@ -185,7 +186,7 @@ def _make_args(device, conf_thres_i2p, conf_thres_l2w,
     args.save_preds       = False
     args.save_for_eval    = False
     args.save_online      = False
-    args.min_publish_conf = min_publish_conf  # skip publish if frame conf < this
+    args.min_publish_conf = min_publish_conf
     return args
 
 
@@ -535,16 +536,20 @@ class SLAM3RBridgeNode(Node):
         self.declare_parameter('output_topic',        '/hm30/pointcloud')
         self.declare_parameter('frame_id',            'hm30_camera')
         self.declare_parameter('device',              'cuda')
-        self.declare_parameter('frame_skip',          1)        # process every frame
-        self.declare_parameter('publish_every_n_frames', 5)    # publish cloud every N processed frames
-        self.declare_parameter('conf_threshold',      3.0)
-        self.declare_parameter('initial_winsize',     7)
-        self.declare_parameter('keyframe_stride',     2)
+        self.declare_parameter('frame_skip',          1)       # process every frame
+        self.declare_parameter('publish_every_n_frames', 5)   # publish cloud every N processed frames
+        # 8 GB config (RTX 5060 Ti / any 8 GB GPU) — matches SLAM3R walkthrough tested command
+        self.declare_parameter('conf_threshold',      1.5)    # conf_thres_i2p
+        self.declare_parameter('conf_threshold_l2w',  10.0)   # conf_thres_l2w (separate from i2p)
+        self.declare_parameter('initial_winsize',     5)
+        self.declare_parameter('keyframe_stride',     3)
         self.declare_parameter('win_r',               3)
-        self.declare_parameter('num_scene_frame',     10)
+        self.declare_parameter('num_scene_frame',     3)
+        self.declare_parameter('max_num_register',    4)
+        self.declare_parameter('num_points_save',     500_000)
         self.declare_parameter('buffer_size',         100)
         self.declare_parameter('retrieve_freq',       1)
-        self.declare_parameter('min_publish_conf',    10.0)  # skip publish trigger if frame conf < this
+        self.declare_parameter('min_publish_conf',    10.0)
 
         in_topic    = self.get_parameter('input_topic').value
         out_topic   = self.get_parameter('output_topic').value
@@ -552,18 +557,22 @@ class SLAM3RBridgeNode(Node):
         device             = self.get_parameter('device').value
         self._frame_skip   = max(1, self.get_parameter('frame_skip').value)
         self._pub_every    = max(1, self.get_parameter('publish_every_n_frames').value)
-        conf_thres         = self.get_parameter('conf_threshold').value
+        conf_thres_i2p     = self.get_parameter('conf_threshold').value
+        conf_thres_l2w     = self.get_parameter('conf_threshold_l2w').value
         init_winsize       = self.get_parameter('initial_winsize').value
         kf_stride          = self.get_parameter('keyframe_stride').value
         win_r              = self.get_parameter('win_r').value
         num_scene_frame    = self.get_parameter('num_scene_frame').value
+        max_num_register   = self.get_parameter('max_num_register').value
+        num_points_save    = self.get_parameter('num_points_save').value
         buffer_size        = self.get_parameter('buffer_size').value
         retrieve_freq      = self.get_parameter('retrieve_freq').value
         min_pub_conf       = self.get_parameter('min_publish_conf').value
 
         self.get_logger().info(
-            f"SLAM3R Bridge: {in_topic} → {out_topic} | "
-            f"device={device} skip={self._frame_skip}"
+            f"SLAM3R Bridge: {in_topic} → {out_topic} | device={device} "
+            f"skip={self._frame_skip} kf_stride={kf_stride} win_r={win_r} "
+            f"num_scene_frame={num_scene_frame} max_num_register={max_num_register}"
         )
 
         # ── Publisher / Subscriber ────────────────────────────────────────────
@@ -586,12 +595,14 @@ class SLAM3RBridgeNode(Node):
         if _SLAM3R_AVAILABLE:
             args = _make_args(
                 device=device,
-                conf_thres_i2p=conf_thres,
-                conf_thres_l2w=conf_thres * 8,   # tighter for final filter
+                conf_thres_i2p=conf_thres_i2p,
+                conf_thres_l2w=conf_thres_l2w,
                 keyframe_stride=kf_stride,
                 initial_winsize=init_winsize,
                 win_r=win_r,
                 num_scene_frame=num_scene_frame,
+                max_num_register=max_num_register,
+                num_points_save=num_points_save,
                 buffer_size=buffer_size,
                 retrieve_freq=retrieve_freq,
                 min_publish_conf=min_pub_conf,

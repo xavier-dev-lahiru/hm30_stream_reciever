@@ -3,11 +3,10 @@
 set -e
 
 CONDA_BASE=$(conda info --base)
-SLAM3R_DIR=/home/lahiru_s/Documents/SLAM3R
-PYTHON_BIN=/usr/bin/python3
+SLAM3R_DIR=/home/lahiru_s/Desktop/projects/SLAM3R
+PYTHON_BIN="$CONDA_BASE/envs/slam3r_bridge/bin/python"
 
 source /home/lahiru_s/ros2_jazzy/install/setup.bash
-# Only SLAM3R in PYTHONPATH — torch/numpy installed directly in system Python 3.10 user site
 export PYTHONPATH="$SLAM3R_DIR:${PYTHONPATH:-}"
 
 echo "=== Python: $($PYTHON_BIN --version) ==="
