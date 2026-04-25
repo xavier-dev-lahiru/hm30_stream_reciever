@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/TopBar.qml</file>
+        <file>qml/Joystick.qml</file>
+        <file>qml/BottomControls.qml</file>
+        <file>qml/Dashboard.qml</file>
+        <file>qml/JoystickView.qml</file>
+        <file>qml/GraphWidget.qml</file>
+        <file>qml/TelemetryRow.qml</file>
+        <file>assets/images/3d_point_cloud_mock.png</file>
+        <file>assets/images/2d_occupancy_map_mock.png</file>
+    </qresource>
+</RCC>
