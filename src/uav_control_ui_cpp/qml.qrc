@@ -8,7 +8,11 @@
         <file>qml/JoystickView.qml</file>
         <file>qml/GraphWidget.qml</file>
         <file>qml/TelemetryRow.qml</file>
+        <file>qml/PpeViolationView.qml</file>
         <file>assets/images/3d_point_cloud_mock.png</file>
         <file>assets/images/2d_occupancy_map_mock.png</file>
+        <file>assets/images/worker_no_jacket.png</file>
+        <file>assets/images/worker_no_jacket_group.png</file>
+        <file>assets/images/worker_no_helmet.png</file>
     </qresource>
 </RCC>

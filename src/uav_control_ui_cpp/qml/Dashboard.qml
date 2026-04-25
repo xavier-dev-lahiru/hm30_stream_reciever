@@ -7,6 +7,8 @@ Item {
     id: dashboardRoot
     anchors.fill: parent
 
+    property int currentTabIndex: 3
+
     Rectangle {
         anchors.fill: parent
         color: "#0F1115"
@@ -261,7 +263,7 @@ Item {
             Row {
                 spacing: 20
                 Repeater {
-                    model: ["Defects (0)", "Unauthorized (0)", "PPE Violations (0)", "Environmental"]
+                    model: ["Defects (0)", "Unauthorized (0)", "PPE Violations (3)", "Environmental"]
                     Item {
                         width: tabText.width + 20
                         height: 40
@@ -269,23 +271,35 @@ Item {
                             id: tabText
                             anchors.centerIn: parent
                             text: modelData
-                            color: index === 3 ? "white" : "#888"
+                            color: index === dashboardRoot.currentTabIndex ? "white" : "#888"
                             font.pixelSize: 14
-                            font.bold: index === 3
+                            font.bold: index === dashboardRoot.currentTabIndex
                         }
                         Rectangle {
                             width: parent.width
                             height: 2
                             color: "#F4D03F"
                             anchors.bottom: parent.bottom
-                            visible: index === 3
+                            visible: index === dashboardRoot.currentTabIndex
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: dashboardRoot.currentTabIndex = index
                         }
                     }
                 }
             }
 
+            // -- CONTENT VIEWS --
+            
+            // PPE Violations View
+            PpeViolationView {
+                visible: dashboardRoot.currentTabIndex === 2
+            }
+
             // -- ENVIRONMENTAL MONITORING SYSTEM BLOCK --
             Rectangle {
+                visible: dashboardRoot.currentTabIndex === 3
                 width: parent.width
                 height: envColumn.height + 40
                 color: "#1C1E24"
