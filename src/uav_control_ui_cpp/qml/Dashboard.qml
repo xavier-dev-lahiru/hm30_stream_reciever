@@ -249,6 +249,11 @@ Item {
                                         telemetryPanel.disp_voltage = telemetryPanel.bms_voltage;
                                         telemetryPanel.disp_power   = Math.abs(telemetryPanel.bms_power);
                                         telemetryPanel.disp_temp    = telemetryPanel.bms_temp;
+                                        
+                                        // Update global backend for TopBar
+                                        rosBackend.battery = Math.round(telemetryPanel.bms_soc);
+                                        rosBackend.temperature = Math.round(telemetryPanel.bms_temp);
+
                                         var now = new Date();
                                         telemetryPanel.bms_lastUpdate = now.getHours() + ":" +
                                             (now.getMinutes()<10?"0":"") + now.getMinutes() + ":" +

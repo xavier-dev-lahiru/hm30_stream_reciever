@@ -175,11 +175,15 @@ Item {
                 height: 40
                 radius: 8
                 color: buttonBg
+                
+                property real disp_temperature: rosBackend.temperature
+                Behavior on disp_temperature { NumberAnimation { duration: 800; easing.type: Easing.OutCubic } }
+
                 Row {
                     anchors.centerIn: parent
                     spacing: 5
                     Text { text: "🌡"; color: disabledTextColor; font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: rosBackend.temperature + "°C"; color: textColor; font.pixelSize: 14; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Math.round(parent.parent.disp_temperature) + "°C"; color: textColor; font.pixelSize: 14; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
             
@@ -189,11 +193,15 @@ Item {
                 height: 40
                 radius: 8
                 color: buttonBg
+                
+                property real disp_battery: rosBackend.battery
+                Behavior on disp_battery { NumberAnimation { duration: 800; easing.type: Easing.OutCubic } }
+
                 Row {
                     anchors.centerIn: parent
                     spacing: 5
-                    Text { text: "🔋"; color: "#E74C3C"; font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter } // Red icon
-                    Text { text: rosBackend.battery + "%"; color: textColor; font.pixelSize: 14; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "🔋"; color: parent.parent.disp_battery > 50 ? "#2ECC71" : (parent.parent.disp_battery > 20 ? "#F39C12" : "#E74C3C"); font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Math.round(parent.parent.disp_battery) + "%"; color: textColor; font.pixelSize: 14; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
 

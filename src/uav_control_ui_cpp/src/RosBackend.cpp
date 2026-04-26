@@ -158,6 +158,22 @@ void RosBackend::setMaxSpeed(double speed)
     }
 }
 
+void RosBackend::setTemperature(int temp)
+{
+    if (m_temperature != temp) {
+        m_temperature = temp;
+        emit temperatureChanged();
+    }
+}
+
+void RosBackend::setBattery(int batt)
+{
+    if (m_battery != batt) {
+        m_battery = batt;
+        emit batteryChanged();
+    }
+}
+
 void RosBackend::updateRightJoystick(double x, double y)
 {
     m_rightJoyX = x;

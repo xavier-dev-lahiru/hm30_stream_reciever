@@ -18,8 +18,8 @@ class RosBackend : public QObject
     Q_OBJECT
     Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
     Q_PROPERTY(int speed READ speed NOTIFY speedChanged)
-    Q_PROPERTY(int temperature READ temperature NOTIFY temperatureChanged)
-    Q_PROPERTY(int battery READ battery NOTIFY batteryChanged)
+    Q_PROPERTY(int temperature READ temperature WRITE setTemperature NOTIFY temperatureChanged)
+    Q_PROPERTY(int battery READ battery WRITE setBattery NOTIFY batteryChanged)
     Q_PROPERTY(bool isAuto READ isAuto WRITE setIsAuto NOTIFY isAutoChanged)
     Q_PROPERTY(bool mappingEnabled READ mappingEnabled WRITE setMappingEnabled NOTIFY mappingEnabledChanged)
     Q_PROPERTY(double maxSpeed READ maxSpeed WRITE setMaxSpeed NOTIFY maxSpeedChanged)
@@ -56,6 +56,8 @@ public slots:
     void setIsAuto(bool isAuto);
     void setMappingEnabled(bool enabled);
     void setMaxSpeed(double speed);
+    void setTemperature(int temp);
+    void setBattery(int batt);
     void setMainCameraOn(bool isOn);
     void updateLeftJoystick(double x, double y);
     void updateRightJoystick(double x, double y);
