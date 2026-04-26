@@ -14,6 +14,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <map_msgs/msg/occupancy_grid_update.hpp>
 #include <cognition_brain_interfaces/srv/drone_pad_control.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <QTimer>
 #include <QVariantList>
 
@@ -85,6 +86,7 @@ public:
 public slots:
     void setIsAuto(bool isAuto);
     void setMappingEnabled(bool enabled);
+    Q_INVOKABLE void saveMap();
     void setMaxSpeed(double speed);
     void setTemperature(int temp);
     void setBattery(int batt);
@@ -164,6 +166,10 @@ private:
     // Twist / Navigation Control
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr m_cmdVelPub;
     QTimer* m_cmdVelTimer = nullptr;
+
+    // System Mode & Map Saving
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_modePub;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_saveMapClient;
 
     // Map & Odometry
     QVariantList m_gridDataQ;

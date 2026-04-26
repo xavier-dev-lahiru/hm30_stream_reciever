@@ -13,6 +13,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(map_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(cognition_brain_interfaces REQUIRED)
 
 # Qt5 dependencies
@@ -40,7 +41,7 @@ target_link_libraries(uav_control_ui
   Qt5::Core Qt5::Quick Qt5::Gui Qt5::Qml
 )
 
-ament_target_dependencies(uav_control_ui rclcpp std_msgs sensor_msgs geometry_msgs nav_msgs map_msgs cognition_brain_interfaces)
+ament_target_dependencies(uav_control_ui rclcpp std_msgs sensor_msgs geometry_msgs nav_msgs map_msgs std_srvs cognition_brain_interfaces)
 
 install(TARGETS uav_control_ui
   DESTINATION lib/${PROJECT_NAME})

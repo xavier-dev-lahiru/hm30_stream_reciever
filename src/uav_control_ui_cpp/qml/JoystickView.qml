@@ -67,6 +67,55 @@ Item {
             }
         }
 
+        Rectangle {
+            id: mapOverlay
+            z: 100
+            anchors.top: topBar.bottom
+            anchors.topMargin: 20
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            width: 350
+            height: 350
+            color: "#080C14"
+            radius: 12
+            border.color: "#1A1F2E"
+            border.width: 1
+            clip: true
+            visible: rosBackend.mappingEnabled
+
+            OccupancyMapView {
+                id: occupancyMapView
+                anchors.fill: parent
+                usingLiveData: rosBackend.usingLiveData
+                gridData: rosBackend.gridData
+                gridWidth: rosBackend.gridWidth
+                gridHeight: rosBackend.gridHeight
+                robotX: rosBackend.robotX
+                robotY: rosBackend.robotY
+                robotAngle: rosBackend.robotAngle
+                mapMinX: rosBackend.mapMinX
+                mapMinY: rosBackend.mapMinY
+                mapMaxX: rosBackend.mapMaxX
+                mapMaxY: rosBackend.mapMaxY
+            }
+
+            Rectangle {
+                width: 140; height: 30; radius: 8; color: Qt.rgba(0,0,0,0.55)
+                anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 15
+                Text { text: "🗺 2D Occupancy Map"; color: "white"; font.pixelSize: 12; anchors.centerIn: parent }
+            }
+
+            Rectangle {
+                width: 120; height: 30; radius: 8; color: "#2ECC71"
+                anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter; anchors.margins: 15
+                Text { text: "💾 Save Map"; color: "white"; font.pixelSize: 12; font.bold: true; anchors.centerIn: parent }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: rosBackend.saveMap()
+                }
+            }
+        }
+
         Text {
             anchors.centerIn: parent
             text: "Waiting for ROS connection..."

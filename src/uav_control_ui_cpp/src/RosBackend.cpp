@@ -5,6 +5,8 @@
 #include <QMetaObject>
 #include <geometry_msgs/msg/point.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 RosBackend::RosBackend(QObject *parent) : QObject(parent)
 {
@@ -38,6 +40,9 @@ void RosBackend::setNode(std::shared_ptr<rclcpp::Node> node)
         m_cameraPulsePub = m_node->create_publisher<std_msgs::msg::Float32>("/main_camera_pulse", 10);
         
         m_cmdVelPub = m_node->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+
+        m_modePub = m_node->create_publisher<std_msgs::msg::String>("/system/set_mode", 10);
+        m_saveMapClient = m_node->create_client<std_srvs::srv::Trigger>("/system/save_map");
 
         m_cmdVelTimer = new QTimer(this);
         connect(m_cmdVelTimer, &QTimer::timeout, this, &RosBackend::publishCmdVel);
@@ -102,7 +107,39 @@ void RosBackend::setMappingEnabled(bool enabled)
     if (m_mappingEnabled != enabled) {
         m_mappingEnabled = enabled;
         emit mappingEnabledChanged();
+
+        if (m_node && m_modePub) {
+            std_msgs::msg::String msg;
+            msg.data = enabled ? "mapping" : "localization";
+            m_modePub->publish(msg);
+            std::cout << "Switched system mode to: " << msg.data << std::endl;
+        }
     }
+}
+
+void RosBackend::saveMap()
+{
+    if (!m_node || !m_saveMapClient) return;
+
+    if (!m_saveMapClient->wait_for_service(std::chrono::seconds(1))) {
+        std::cerr << "Map save service not available!" << std::endl;
+        return;
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+    
+    m_saveMapClient->async_send_request(request, [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+        auto response = future.get();
+        if (response->success) {
+            std::cout << "Map saved successfully: " << response->message << std::endl;
+            // Safely toggle back to localization mode on the main thread
+            QMetaObject::invokeMethod(this, [this]() {
+                setMappingEnabled(false);
+            });
+        } else {
+            std::cerr << "Failed to save map: " << response->message << std::endl;
+        }
+    });
 }
 
 void RosBackend::setMainCameraOn(bool isOn)

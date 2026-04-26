@@ -238,6 +238,11 @@ Rectangle {
             var rCanvasX = mapView.sRobotX * baseCs;
             var rCanvasY = mapView.sRobotY * baseCs;
             var rr = baseCs * 2.2;
+            
+            // Clamp the maximum radius so it doesn't get huge when the map is empty/small
+            if (rr > 12) {
+                rr = 12;
+            }
 
             // Shadow
             ctx.beginPath()

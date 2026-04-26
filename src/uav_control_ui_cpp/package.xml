@@ -15,6 +15,7 @@
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>map_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>cognition_brain_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
