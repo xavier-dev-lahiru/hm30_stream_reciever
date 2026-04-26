@@ -1,0 +1,7 @@
+# Service for controlling drone landing pad
+string command  # "open" or "close"
+---
+# Response
+bool success
+string message
+string current_status  # "open", "closed", "opening", "closing", "error", "unknown"

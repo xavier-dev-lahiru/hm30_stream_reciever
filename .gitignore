@@ -34,3 +34,5 @@ cmake-build-*/
 Thumbs.db
 *~
 data/*
+install/*
+log/*
