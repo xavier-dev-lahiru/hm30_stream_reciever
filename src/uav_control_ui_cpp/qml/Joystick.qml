@@ -85,40 +85,54 @@ Item {
 
             x: (base.width - width) / 2
             y: (base.height - height) / 2
-
-            MouseArea {
-                id: mouseArea
-                anchors.fill: parent
-                drag.target: stick
-                drag.axis: Drag.XAndYAxis
-
-                onPositionChanged: {
-                    var dx = stick.x + stick.width/2 - base.width/2;
-                    var dy = stick.y + stick.height/2 - base.height/2;
-                    var distance = Math.sqrt(dx*dx + dy*dy);
-                    var maxDist = base.width/2 - stick.width/2;
-
-                    if (distance > maxDist) {
-                        var angle = Math.atan2(dy, dx);
-                        stick.x = base.width/2 + Math.cos(angle) * maxDist - stick.width/2;
-                        stick.y = base.height/2 + Math.sin(angle) * maxDist - stick.height/2;
-                    }
-                    
-                    // Normalize -1 to 1
-                    var nx = (stick.x + stick.width/2 - base.width/2) / maxDist;
-                    var ny = (stick.y + stick.height/2 - base.height/2) / maxDist;
-                    root.positionChanged(nx, ny);
-                }
-
-                onReleased: {
-                    if (autoCenter) {
-                        resetCenter();
-                    }
-                }
-            }
             
             Behavior on x { NumberAnimation { duration: mouseArea.pressed ? 0 : 100 } }
             Behavior on y { NumberAnimation { duration: mouseArea.pressed ? 0 : 100 } }
+        }
+
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+
+            function updateStickPosition(mouseX, mouseY) {
+                var dx = mouseX - base.width/2;
+                var dy = mouseY - base.height/2;
+                var distance = Math.sqrt(dx*dx + dy*dy);
+                var maxDist = base.width/2 - stick.width/2;
+
+                var nx = 0;
+                var ny = 0;
+
+                if (distance > maxDist) {
+                    var angle = Math.atan2(dy, dx);
+                    stick.x = base.width/2 + Math.cos(angle) * maxDist - stick.width/2;
+                    stick.y = base.height/2 + Math.sin(angle) * maxDist - stick.height/2;
+                    nx = Math.cos(angle);
+                    ny = Math.sin(angle);
+                } else {
+                    stick.x = mouseX - stick.width/2;
+                    stick.y = mouseY - stick.height/2;
+                    nx = dx / maxDist;
+                    ny = dy / maxDist;
+                }
+                root.positionChanged(nx, ny);
+            }
+
+            onPressed: (mouse) => {
+                updateStickPosition(mouse.x, mouse.y);
+            }
+            
+            onPositionChanged: (mouse) => {
+                if (pressed) {
+                    updateStickPosition(mouse.x, mouse.y);
+                }
+            }
+
+            onReleased: {
+                if (autoCenter) {
+                    resetCenter();
+                }
+            }
         }
     }
 }

@@ -4,6 +4,45 @@ import CustomControls 1.0
 
 Item {
     id: joystickViewRoot
+    focus: true
+    Component.onCompleted: forceActiveFocus()
+    onVisibleChanged: {
+        if (visible) forceActiveFocus()
+    }
+
+    // Track keyboard states to allow simultaneous key presses (e.g., Forward + Left)
+    property real keyLinear: 0.0
+    property real keyAngular: 0.0
+
+    Keys.onPressed: (event) => {
+        if (rosBackend.isAuto) return;
+        if (event.isAutoRepeat) return;
+        let changed = false;
+        if (event.key === Qt.Key_Up) { keyLinear = -1.0; changed = true; }
+        else if (event.key === Qt.Key_Down) { keyLinear = 1.0; changed = true; }
+        else if (event.key === Qt.Key_Left) { keyAngular = -1.0; changed = true; }
+        else if (event.key === Qt.Key_Right) { keyAngular = 1.0; changed = true; }
+        
+        if (changed) {
+            rosBackend.updateRightJoystick(keyAngular, keyLinear);
+            event.accepted = true;
+        }
+    }
+
+    Keys.onReleased: (event) => {
+        if (rosBackend.isAuto) return;
+        if (event.isAutoRepeat) return;
+        let changed = false;
+        if (event.key === Qt.Key_Up && keyLinear === -1.0) { keyLinear = 0.0; changed = true; }
+        else if (event.key === Qt.Key_Down && keyLinear === 1.0) { keyLinear = 0.0; changed = true; }
+        else if (event.key === Qt.Key_Left && keyAngular === -1.0) { keyAngular = 0.0; changed = true; }
+        else if (event.key === Qt.Key_Right && keyAngular === 1.0) { keyAngular = 0.0; changed = true; }
+        
+        if (changed) {
+            rosBackend.updateRightJoystick(keyAngular, keyLinear);
+            event.accepted = true;
+        }
+    }
 
     VideoStreamItem {
         id: videoStream

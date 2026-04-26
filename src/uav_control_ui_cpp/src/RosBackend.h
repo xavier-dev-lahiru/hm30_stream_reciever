@@ -9,7 +9,9 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <geometry_msgs/msg/point.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <cognition_brain_interfaces/srv/drone_pad_control.hpp>
+#include <QTimer>
 
 class RosBackend : public QObject
 {
@@ -20,6 +22,7 @@ class RosBackend : public QObject
     Q_PROPERTY(int battery READ battery NOTIFY batteryChanged)
     Q_PROPERTY(bool isAuto READ isAuto WRITE setIsAuto NOTIFY isAutoChanged)
     Q_PROPERTY(bool mappingEnabled READ mappingEnabled WRITE setMappingEnabled NOTIFY mappingEnabledChanged)
+    Q_PROPERTY(double maxSpeed READ maxSpeed WRITE setMaxSpeed NOTIFY maxSpeedChanged)
     
     Q_PROPERTY(double panX READ panX NOTIFY panXChanged)
     Q_PROPERTY(double tiltY READ tiltY NOTIFY tiltYChanged)
@@ -40,6 +43,7 @@ public:
     int battery() const { return m_battery; }
     bool isAuto() const { return m_isAuto; }
     bool mappingEnabled() const { return m_mappingEnabled; }
+    double maxSpeed() const { return m_maxSpeed; }
 
     double panX() const { return m_panX; }
     double tiltY() const { return m_tiltY; }
@@ -51,6 +55,7 @@ public:
 public slots:
     void setIsAuto(bool isAuto);
     void setMappingEnabled(bool enabled);
+    void setMaxSpeed(double speed);
     void setMainCameraOn(bool isOn);
     void updateLeftJoystick(double x, double y);
     void updateRightJoystick(double x, double y);
@@ -69,12 +74,16 @@ signals:
     void batteryChanged();
     void isAutoChanged();
     void mappingEnabledChanged();
+    void maxSpeedChanged();
     void panXChanged();
     void tiltYChanged();
     void linearSpeedChanged();
     void angularSpeedChanged();
     void padStatusChanged();
     void mainCameraOnChanged();
+
+private slots:
+    void publishCmdVel();
 
 private:
     std::shared_ptr<rclcpp::Node> m_node;
@@ -84,10 +93,13 @@ private:
     int m_battery = 0;
     bool m_isAuto = true;
     bool m_mappingEnabled = false;
+    double m_maxSpeed = 0.1;
 
     // Joystick 2
     double m_linearSpeed = 0.0;
     double m_angularSpeed = 0.0;
+    double m_rightJoyX = 0.0;
+    double m_rightJoyY = 0.0;
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr m_imageSub;
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
@@ -107,6 +119,10 @@ private:
     // Camera Pulse
     bool m_mainCameraOn = false;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_cameraPulsePub;
+
+    // Twist / Navigation Control
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr m_cmdVelPub;
+    QTimer* m_cmdVelTimer = nullptr;
 };
 
 #endif // ROS_BACKEND_H

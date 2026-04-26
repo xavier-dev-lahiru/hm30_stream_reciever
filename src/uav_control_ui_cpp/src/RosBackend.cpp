@@ -35,6 +35,12 @@ void RosBackend::setNode(std::shared_ptr<rclcpp::Node> node)
         m_gimbalHomePub = m_node->create_publisher<std_msgs::msg::String>("/ugv_gimbal/home", 10);
         
         m_cameraPulsePub = m_node->create_publisher<std_msgs::msg::Float32>("/main_camera_pulse", 10);
+        
+        m_cmdVelPub = m_node->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+
+        m_cmdVelTimer = new QTimer(this);
+        connect(m_cmdVelTimer, &QTimer::timeout, this, &RosBackend::publishCmdVel);
+        m_cmdVelTimer->start(100); // 10Hz continuous publish
     }
 }
 
@@ -140,23 +146,59 @@ void RosBackend::updateLeftJoystick(double x, double y)
     }
 }
 
+void RosBackend::setMaxSpeed(double speed)
+{
+    if (m_maxSpeed != speed) {
+        m_maxSpeed = speed;
+        emit maxSpeedChanged();
+        
+        // Re-apply current inputs with the new multiplier
+        // This is especially necessary for keyboard inputs that don't trigger continuous events
+        updateRightJoystick(m_rightJoyX, m_rightJoyY);
+    }
+}
+
 void RosBackend::updateRightJoystick(double x, double y)
 {
+    m_rightJoyX = x;
+    m_rightJoyY = y;
+
     // Linear / Angular speed mapping
     // x = angular (left/right), y = linear (forward/back)
-    m_linearSpeed = -y; // Up is -y in UI coordinates usually, so we invert
-    m_angularSpeed = x;
+    m_linearSpeed = -y * m_maxSpeed; // Up is -y in UI coordinates usually, so we invert
+    m_angularSpeed = x * m_maxSpeed;
 
     emit linearSpeedChanged();
     emit angularSpeedChanged();
     
-    // Publish Twist message here
+    // Immediate publish for responsiveness, timer will take over for continuous
+    publishCmdVel();
+}
+
+void RosBackend::publishCmdVel()
+{
+    if (m_cmdVelPub && !m_isAuto) {
+        auto twist = geometry_msgs::msg::Twist();
+        twist.linear.x = m_linearSpeed;
+        twist.angular.z = -m_angularSpeed; 
+        m_cmdVelPub->publish(twist);
+    }
 }
 
 void RosBackend::stopAction()
 {
     std::cout << "STOP action triggered!" << std::endl;
-    // Publish stop command
+    m_rightJoyX = 0.0;
+    m_rightJoyY = 0.0;
+    m_linearSpeed = 0.0;
+    m_angularSpeed = 0.0;
+    emit linearSpeedChanged();
+    emit angularSpeedChanged();
+    
+    if (m_cmdVelPub) {
+        auto twist = geometry_msgs::msg::Twist();
+        m_cmdVelPub->publish(twist); // Immediate stop publish (ignoring isAuto check to force stop)
+    }
 }
 
 void RosBackend::cameraAction()

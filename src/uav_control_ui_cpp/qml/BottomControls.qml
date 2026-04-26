@@ -103,59 +103,125 @@ Item {
     }
 
     // RIGHT SIDE
-    Column {
+    Row {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.rightMargin: 20
         anchors.bottomMargin: 20
         spacing: 20
 
-        Row {
-            anchors.right: parent.right
-            spacing: 15
+        Column {
+            width: 150
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 20
 
-            // Camera Button
-            Rectangle {
-                width: 50
-                height: 50
-                radius: 25
-                color: "#111" // very dark
-                Text {
-                    text: "📷"
-                    color: "#444"
-                    font.pixelSize: 20
-                    anchors.centerIn: parent
+            // Max Speed Slider
+            Column {
+                spacing: 5
+                width: 120
+                anchors.right: parent.right
+                
+                Text { 
+                    text: "Max Speed: " + rosBackend.maxSpeed.toFixed(1) + "x"
+                    color: "#AAAAAA"
+                    font.pixelSize: 12
+                    horizontalAlignment: Text.AlignRight
+                    width: parent.width
                 }
-                MouseArea { anchors.fill: parent; onClicked: rosBackend.cameraAction() }
+                Slider {
+                    id: speedSlider
+                    width: parent.width
+                    from: 0.1
+                    to: 5.0
+                    stepSize: 0.1
+                    value: rosBackend.maxSpeed
+                    enabled: !rosBackend.isAuto
+                    focusPolicy: Qt.NoFocus
+                    onValueChanged: {
+                        if (rosBackend.maxSpeed !== value) {
+                            rosBackend.maxSpeed = value
+                        }
+                    }
+
+                    background: Rectangle {
+                        x: speedSlider.leftPadding
+                        y: speedSlider.topPadding + speedSlider.availableHeight / 2 - height / 2
+                        implicitWidth: 100
+                        implicitHeight: 4
+                        width: speedSlider.availableWidth
+                        height: implicitHeight
+                        radius: 2
+                        color: "#333333"
+
+                        Rectangle {
+                            width: speedSlider.visualPosition * parent.width
+                            height: parent.height
+                            color: "#F4D03F" // match active color
+                            radius: 2
+                        }
+                    }
+
+                    handle: Rectangle {
+                        x: speedSlider.leftPadding + speedSlider.visualPosition * (speedSlider.availableWidth - width)
+                        y: speedSlider.topPadding + speedSlider.availableHeight / 2 - height / 2
+                        implicitWidth: 14 // reduced size
+                        implicitHeight: 14 // reduced size
+                        radius: 7
+                        color: speedSlider.pressed ? "#f0f0f0" : "#ffffff"
+                        border.color: "#888888"
+                        opacity: 0.8 // slight transparency
+                    }
+                }
             }
 
-            // STOP Button
-            Rectangle {
-                width: 50
-                height: 50
-                radius: 25
-                color: "#E74C3C" // Red
-                border.color: "white"
-                border.width: 1
-                Text {
-                    text: "STOP"
-                    color: "white"
-                    font.pixelSize: 12
-                    font.bold: true
-                    anchors.centerIn: parent
-                }
-                MouseArea { anchors.fill: parent; onClicked: rosBackend.stopAction() }
+            Column {
+                spacing: 5
+                anchors.right: parent.right
+                Text { text: "Linear: " + rosBackend.linearSpeed.toFixed(2) + " m/s"; color: "#888"; font.pixelSize: 12; horizontalAlignment: Text.AlignRight; width: parent.width }
+                Text { text: "Angular: " + rosBackend.angularSpeed.toFixed(2) + " rad/s"; color: "#888"; font.pixelSize: 12; horizontalAlignment: Text.AlignRight; width: parent.width }
             }
         }
 
-        Row {
-            anchors.right: parent.right
-            spacing: 20
+        Column {
+            spacing: 15
+            anchors.bottom: parent.bottom
 
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                Text { text: "Linear: " + rosBackend.linearSpeed.toFixed(2) + " m/s"; color: "#888"; font.pixelSize: 12; horizontalAlignment: Text.AlignRight }
-                Text { text: "Angular: " + rosBackend.angularSpeed.toFixed(2) + " rad/s"; color: "#888"; font.pixelSize: 12; horizontalAlignment: Text.AlignRight }
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 15
+
+                // Camera Button
+                Rectangle {
+                    width: 50
+                    height: 50
+                    radius: 25
+                    color: "#111" // very dark
+                    Text {
+                        text: "📷"
+                        color: "#444"
+                        font.pixelSize: 20
+                        anchors.centerIn: parent
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: rosBackend.cameraAction() }
+                }
+
+                // STOP Button
+                Rectangle {
+                    width: 50
+                    height: 50
+                    radius: 25
+                    color: "#E74C3C" // Red
+                    border.color: "white"
+                    border.width: 1
+                    Text {
+                        text: "STOP"
+                        color: "white"
+                        font.pixelSize: 12
+                        font.bold: true
+                        anchors.centerIn: parent
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: rosBackend.stopAction() }
+                }
             }
 
             Joystick {
@@ -164,6 +230,8 @@ Item {
                 labelLeft: "Left"
                 labelRight: "Right"
                 isRightSide: true
+                enabled: !rosBackend.isAuto
+                opacity: enabled ? 1.0 : 0.4
                 onPositionChanged: rosBackend.updateRightJoystick(x, y)
             }
         }
