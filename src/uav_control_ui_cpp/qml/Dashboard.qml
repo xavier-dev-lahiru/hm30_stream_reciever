@@ -5,7 +5,6 @@ import CustomControls 1.0
 
 Item {
     id: dashboardRoot
-    anchors.fill: parent
 
     property int currentTabIndex: 3
 

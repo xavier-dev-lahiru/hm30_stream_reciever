@@ -122,35 +122,40 @@ void RosBackend::setMainCameraOn(bool isOn)
 
 void RosBackend::updateLeftJoystick(double x, double y)
 {
-    // Asymmetrical mapping for X (Pan)
-    // Center is 2050. Min is 0, Max is 5100.
+    // Pan (X): min=439, center=2225, max=4011
+    const double PAN_MIN    = 439.0;
+    const double PAN_CENTER = 2225.0;
+    const double PAN_MAX    = 4011.0;
+
     if (x < 0) {
-        m_panX = 2050 + (x * 2050); // -1 to 0 maps to 0 to 2050
+        m_panX = PAN_CENTER + (x * (PAN_CENTER - PAN_MIN)); // -1→0 maps PAN_MIN→PAN_CENTER
     } else {
-        m_panX = 2050 + (x * 3050); // 0 to 1 maps to 2050 to 5100
+        m_panX = PAN_CENTER + (x * (PAN_MAX - PAN_CENTER)); // 0→1 maps PAN_CENTER→PAN_MAX
     }
     
-    // Asymmetrical mapping for Y (Tilt)
-    // Center is -4000. Range is -4100 to 0.
-    // Inverted direction based on user feedback
+    // Tilt (Y): min=0, center=2050, max=4100
+    const double TILT_MIN    = 0.0;
+    const double TILT_CENTER = 2050.0;
+    const double TILT_MAX    = 4100.0;
+
+    // Dragging UP   (-1) → 0
+    // Dragging DOWN ( 1) → 4100
     if (y < 0) {
-        // Dragging UP (-1 to 0) maps to -4100 to -4000
-        m_tiltY = -4000 + (y * 100); 
+        m_tiltY = TILT_CENTER + (y * (TILT_CENTER - TILT_MIN));
     } else {
-        // Dragging DOWN (0 to 1) maps to -4000 to 0
-        m_tiltY = -4000 + (y * 4000);
+        m_tiltY = TILT_CENTER + (y * (TILT_MAX - TILT_CENTER));
     }
 
-    // Clamp values just to be perfectly safe
-    if (m_panX < 0) m_panX = 0;
-    if (m_panX > 5100) m_panX = 5100;
-    if (m_tiltY < -4100) m_tiltY = -4100;
-    if (m_tiltY > 0) m_tiltY = 0;
+    // Clamp to hardware limits
+    if (m_panX  < PAN_MIN)  m_panX  = PAN_MIN;
+    if (m_panX  > PAN_MAX)  m_panX  = PAN_MAX;
+    if (m_tiltY < TILT_MIN) m_tiltY = TILT_MIN;
+    if (m_tiltY > TILT_MAX) m_tiltY = TILT_MAX;
 
     emit panXChanged();
     emit tiltYChanged();
     
-    std::cout << "Gimbal Joystick -> Pan: " << m_panX << ", Tilt: " << m_tiltY << std::endl;
+
     
     if (m_gimbalPosPub) {
         auto msg = geometry_msgs::msg::Point();
@@ -240,8 +245,8 @@ void RosBackend::cameraAction()
 void RosBackend::targetAction()
 {
     std::cout << "Target action triggered (Gimbal Default)!" << std::endl;
-    m_panX = 2050;
-    m_tiltY = -4000;
+    m_panX = 2225;
+    m_tiltY = 2050;
     emit panXChanged();
     emit tiltYChanged();
 
@@ -255,8 +260,8 @@ void RosBackend::targetAction()
 void RosBackend::gimbalHomeAction()
 {
     std::cout << "Gimbal Home action triggered!" << std::endl;
-    m_panX = 2050;
-    m_tiltY = -4000;
+    m_panX = 2225;
+    m_tiltY = 2050;
     emit panXChanged();
     emit tiltYChanged();
 
