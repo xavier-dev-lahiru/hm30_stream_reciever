@@ -111,20 +111,19 @@ Item {
         spacing: 20
 
         Column {
-            width: 150
+            width: 140
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 20
+            spacing: 15
 
             // Max Speed Slider
             Column {
-                spacing: 5
-                width: 120
-                anchors.right: parent.right
+                spacing: 8
+                width: parent.width
                 
                 Text { 
                     text: "Max Speed: " + rosBackend.maxSpeed.toFixed(1) + "x"
                     color: "#AAAAAA"
-                    font.pixelSize: 12
+                    font.pixelSize: 14
                     horizontalAlignment: Text.AlignRight
                     width: parent.width
                 }
@@ -174,11 +173,12 @@ Item {
                 }
             }
 
+            // Velocities
             Column {
                 spacing: 5
-                anchors.right: parent.right
-                Text { text: "Linear: " + rosBackend.linearSpeed.toFixed(2) + " m/s"; color: "#888"; font.pixelSize: 12; horizontalAlignment: Text.AlignRight; width: parent.width }
-                Text { text: "Angular: " + rosBackend.angularSpeed.toFixed(2) + " rad/s"; color: "#888"; font.pixelSize: 12; horizontalAlignment: Text.AlignRight; width: parent.width }
+                width: parent.width
+                Text { text: "Linear: " + rosBackend.linearSpeed.toFixed(2) + " m/s"; color: "#AAAAAA"; font.pixelSize: 14; horizontalAlignment: Text.AlignRight; width: parent.width }
+                Text { text: "Angular: " + rosBackend.angularSpeed.toFixed(2) + " rad/s"; color: "#AAAAAA"; font.pixelSize: 14; horizontalAlignment: Text.AlignRight; width: parent.width }
             }
         }
 
