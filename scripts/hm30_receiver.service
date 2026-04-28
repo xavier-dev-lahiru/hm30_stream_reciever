@@ -1,0 +1,31 @@
+[Unit]
+Description=SIYI HM30 RTP Receiver (Headless ROS 2 Publisher)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Change 'xavier_ai' if your username is different
+User=xavier_ai
+WorkingDirectory=/home/xavier_ai/Documents/hm_30_rtp_receiver
+
+# ROS 2 Environment Variables
+Environment="ROS_DOMAIN_ID=0"
+# Uncomment and configure if you are using specific DDS settings
+# Environment="RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+# Environment="CYCLONEDDS_URI=file:///home/xavier_ai/cyclonedds/cyclonedx.xml"
+
+# Source ROS 2 and run the application
+ExecStart=/bin/bash -c "source /opt/ros/humble/setup.bash && exec /home/xavier_ai/Documents/hm_30_rtp_receiver/build/hm30_rtp_receiver --headless --url 'udp://0.0.0.0:5600'"
+
+# Auto-restart on crash or failure
+Restart=always
+RestartSec=5
+
+# Standard Output/Error to syslog/journalctl
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=hm30_receiver
+
+[Install]
+WantedBy=multi-user.target
